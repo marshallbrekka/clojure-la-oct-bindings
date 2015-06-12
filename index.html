@@ -44,13 +44,21 @@
       <!-- Any section element inside of this container is displayed as a slide -->
       <div class="slides">
 	<section>
-	  <h2>Clojure at ReadyForZero</h2>
+	  <h1>Clojure at ReadyForZero</h1>
           <p>Mature and large Clojure codebase (100K+ lines)</p>
           <p>Wide range of uses (Web, Daemon, Infrastructure, PCI)</p>
 	</section>
 
         <section>
-	  <h2>Why Clojure?</h2>
+          <h1>Topics</h1>
+          <ol>
+            <li>Why Clojure?</li>
+            <li>Tips for Clojure in production</li>
+          </ol>
+        </section>
+
+        <section>
+	  <h1>Why Clojure?</h1>
           <ul>
             <li class="fragment">Functional programming with
               immutability-by-default <em><small>- eliminates whole classes of bugs</small></em></li>
@@ -58,9 +66,10 @@
             <li class="fragment">Concurrency for “free”</li>
           </ul>
           <aside class="notes">
-            <p>because of immutability, we can very easily parralize pure function
-              without having to worry about issues that are common to
-              multi-threaded environments</p>
+            <ul>
+              <li>immutability - easily parralize pure function</li>
+              <li>bypass issues common to multi-thread</li>
+            </ul>
           </aside>
 	</section>
         
@@ -75,9 +84,11 @@
               <li class="fragment">Simple data flows, easy to understand and modify</li>
             </ul>
             <aside class="notes">
-              <p>java/jvm libraries, battle tested-memory management, etc</p>
-              <p>point out that "transform data" step is very common, something
-                about data flows</p>
+              <ul>
+                <li>yodlee, payments, PCI, infrastructue</li>
+                <li>java/jvm libraries, battle tested-memory management,
+                  etc</li>
+              </ul>
             </aside>
           </section>
           <section>
@@ -121,15 +132,15 @@
         <section>
 	  <h2>Easy, Readable Dataflows</h2>
           <h5>-&gt; and -&gt;&gt; macros let us express our business logic in a clear and succinct way</h5>
-          <p>Some typical lisp code (eww, parenthesis!)</p>
-	  <pre><code data-trim contenteditable>
+          <p>What many think that lisp looks like (eww, parentheses!)</p>
+	  <pre><code data-trim contenteditable class="clojure">
 (defn get-total-spent
   "Returns total spent for the given transactions"
   [transactions]
   (reduce + (map :amount (filter is-debit-type transactions))))
 	  </code></pre>
           <p class="fragment">-&gt;&gt; makes the data flow easier to understand and modify</p>
-	  <pre class="fragment"><code data-trim contenteditable>
+	  <pre class="fragment"><code data-trim contenteditable class="clojure">
 (defn get-total-spent
   "Returns total spent for the given transactions"
   [transactions]
@@ -138,372 +149,199 @@
        (map :amount)
        (reduce +)))
           </code></pre>
-	</section>
-
-        <!-- -> and ->> macros -->
-        <section>
-	  <h2>Easy, Readable Dataflows</h2>
-          <p>->> also lets you build functions concatenatively in the REPL</p>
-          <p>immutability + s-expressions = <em>quick development</em></p>
-
-          <pre><code data-trim contenteditable>
-> (->> "test" println)
-"test"
-> (->> "test" (println "a"))
-"a test"
-> (->> "test" (str "a") (println "here is "))
-"here is a test"
-          </code></pre>
           <aside class="notes">
-            <p>Combined with immutability and s-expressions, this lets you
-            quickly develop, something that python and
-              ruby <em><strong>cannot</strong></em> do as easily</p>
+            Threading macros (thread-first, thread-last)
           </aside>
 	</section>
 
 
         <section>
-          <p>Demo of concat programming</p>
+	  <h2>Easy, Readable Dataflows</h2>
+          <p>->> also lets you build functions concatenatively in the REPL</p>
+          <p>immutability + s-expressions = <em>quick development</em></p>
+
+          <pre><code data-trim contenteditable  class="clojure">
+> (->> "test" println)
+test
+> (->> "test" (println "a"))
+a test
+> (->> "test" (str "a ") (println "here is "))
+here is a test
+          </code></pre>
+          <aside class="notes">
+            <p>immutability + s-expressions = quick. python and
+              ruby <em><strong>cannot</strong></em> do as easily</p>
+          </aside>
+	</section>
+
+        <section data-background-video="lib/concat_repl.mp4">
+<!--          <p>Demo of concat programming</p>
             <iframe data-autoplay
                   src="https://asciinema.org/api/asciicasts/13761?loop=true&amp;size=medium"
                   id="asciicast-iframe-13761" name="asciicast-iframe-13761"
-                  scrolling="yes" class="stretch"></iframe>
+                  scrolling="yes" class="stretch"></iframe>-->
         </section>
 
+        <section data-background-video="lib/qa_repl.mp4">
+          <aside class="notes">
+            <ul>
+              <li>start browser session</li>
+              <li>query for qa elements</li>
+              <li>perform actions on those qa elements</li>
+              <li>Write full test based on REPL</li>
+            </ul>
+          </aside>
+        </section>
 
         <section>
-          <iframe width="560" height="315" class="stretch"
-          src="https://www.youtube.com/embed/qUrFLLrEOws" frameborder="0"
-                  allowfullscreen></iframe>
+          <h2>Macros - the good</h2>
+          <p>Powerful for creating abstractions, DSLs, new syntax</p>
+          <pre class="fragment"><code data-trip contenteditable  class="clojure">
+(defvalidatedfn login
+  "Given a map with keys :email and :password attempts to login the
+   user and returns an :ok or :error response"
+  [params]
+  [{:email String :password String} => {:response (s/enum :ok :error)}]
+  (if (do-login (:email params) (:password params))
+    {:response :ok}
+    {:response :error}))
+          </code></pre>
+          <aside class="notes">
+            <ul>
+              <li>Language level construct.</li>
+              <li>extends the standard defn form to allow for validation</li>
+            </ul>
+          </aside>
         </section>
 
-	<section>
-	  <h2>Hello There</h2>
-	  <p>
-	    reveal.js enables you to create beautiful interactive slide decks using HTML. This presentation will show you examples of what it can do.
-	  </p>
-	</section>
+        <section>
+          <h2>Why Clojure Recap</h2>
+          <ul>
+            <li>Build up logic iteratively with simple primitives</li>
+            <li>Get instant feedback</li>
+            <li>Very expressive, at the same level as the langauge</li>
+          </ul>
+        </section>
 
-	<!-- Example of nested vertical slides -->
-	<section>
-	  <section>
-	    <h2>Vertical Slides</h2>
-	    <p>Slides can be nested inside of each other.</p>
-	    <p>Use the <em>Space</em> key to navigate through all slides.</p>
-	    <br>
-	    <a href="#" class="navigate-down">
-	      <img width="178" height="238" data-src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Down arrow">
-	    </a>
-	  </section>
-	  <section>
-	    <h2>Basement Level 1</h2>
-	    <p>Nested slides are useful for adding additional detail underneath a high level horizontal slide.</p>
-	  </section>
-	  <section>
-	    <h2>Basement Level 2</h2>
-	    <p>That's it, time to go back up.</p>
-	    <br>
-	    <a href="#/2">
-	      <img width="178" height="238" data-src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Up arrow" style="transform: rotate(180deg); -webkit-transform: rotate(180deg);">
-	    </a>
-	  </section>
-	</section>
+        <section>
+          <h1>Tips for using Clojure in production</h1>
+        </section>
 
-	<section>
-	  <h2>Slides</h2>
-	  <p>
-	    Not a coder? Not a problem. There's a fully-featured visual editor for authoring these, try it out at <a href="http://slides.com" target="_blank">http://slides.com</a>.
-	  </p>
-	</section>
+        <section>
+          <h2>Macros - the bad</h2>
+          <ul>
+            <li class="fragment">Limited composability, can’t be used in higher-order functions</li>
+            <li class="fragment">Better to use less macros and DLSs in favor of functions and maps</li>
+          </ul>
+          <pre class="fragment"><code data-trip contenteditable  class="clojure">
+(defendpoint web2 [:post "/authed/graph"]
+  (in {:type string?
+       :account string?})
+  (out (with-valid-control
+         {}))
+  (return {:keys [type account]}
+          (if-let [graph-data (prog/get-graph (user/me) type account)]
+            (with-control {:result "ok"} graph-data)
+            (with-control {:result "not-found"} nil))))
+          </code></pre>
+          <aside class="notes">
+            <ul>
+              <li>do not compose as well as functions (not higher order)</li>
+              <li>difficult to reason about</li>
+              <li>DSLs and macros violated principle-of-least-surprise, we avoid
+              them, exceptions are reviewed</li>
+              
+              <li>return block, wtf are the args to this, this
+                looks nothing like a function (but it is!!!)</li>
+              </ul>
+          </aside>
+        </section>
 
-	<section>
-	  <h2>Point of View</h2>
-	  <p>
-	    Press <strong>ESC</strong> to enter the slide overview.
-	  </p>
-	  <p>
-	    Hold down alt and click on any element to zoom in on it using <a href="http://lab.hakim.se/zoom-js">zoom.js</a>. Alt + click anywhere to zoom back out.
-	  </p>
-	</section>
+        <section>
+          <h2>Macros - the bad</h2>
+          <p>Instead use standard functions and maps</p>
+          <pre><code data-strip contenteditable  class="clojure">
+(add-handler :mobile "progressgraph" "1" "progressgraph"
+  {:fn progress-graph
+   :in-examples [{:account-id 1}]
+   :out-examples [(iface/response :ok {:current  [{:x 11.2 :y 20}
+                                                  {:x 13 :y 10}
+                                                  {:x 14 :y 0}]
+                                       :history  [{:x 1 :y 50}
+                                                  {:x 4 :y 40.34}
+                                                  {:x 10 :y 35.0}]})
+                  (iface/response :error ["something wrong"])]})
+          </code></pre>
+        </section>
 
-	<section>
-	  <h2>Touch Optimized</h2>
-	  <p>
-	    Presentations look great on touch devices, like mobile phones and tablets. Simply swipe through your slides.
-	  </p>
-	</section>
+        <section>
+          <h2>Use protection (against clojures power)</h2>
+          <p>Conventions help</p>
+          <p class="fragment">Guardrails, when convention isn’t enough</p>
+          <aside class="notes">
+            Clojure will happily let you “shadow” core
+            functions with local variables. we disallow this in our coding
+          guidelines
+          </aside>
+        </section>
 
-	<section data-markdown>
-	  <script type="text/template">
-	    ## Markdown support
+        <section>
+          <h2>Most common bug</h2>
+          <p>Missing/misspelled keys</p>
+          <pre><code data-strip class="clojure">
+(def data {:my-key "my value"})
+(:my-jey data) ;; nil, doesn't throw error              
+          </code></pre>
+          <div class="fragment">
+          <p>We guard against them using -!&gt; and friends</p>
+          <pre><code data-strip class="clojure">
+(def data {:my-key "my value"})
+(-!> data :my-jey) ;; got nil value for key, Throws Exception!
+          </code></pre>
+          </div>
+        </section>
 
-	    Write content using inline or external Markdown.
-	    Instructions and more info available in the [readme](https://github.com/hakimel/reveal.js#markdown).
+        <section>
+          <h2>What does function in/out look like?</h2>
+          <p>For trusted entry points, docstrings usually suffice</p>
+          <pre><code class="clojure" data-strip>
+(defn user-accounts 
+  "Given a user id, returns a list of account objects, each 
+   with the keys :id, :balance, :name, :created-date"
+   [user-id]
+   ...)
+          </code></pre>
+          <p class="fragment">For unstrusted entry points - Prismatic Schema to
+            the rescue!</p>
+          <aside class="notes">
+            We added the primastic schema library as a language level feature
+            for our defvalidatedfn implimentation
+          </aside>
+        </section>
 
-	    ```
-	    <section data-markdown>
-	      ## Markdown support
+        <section>
+          <h2>Use Paredit!</h2>
+          <h3>Plugin available for many editors</h3>
+          <p>Auto-manage parenthesis balance</p>
+          <p>Easy manipulation of s-expression form</p>
+        </section>
 
-	      Write content using inline or external Markdown.
-	      Instructions and more info available in the [readme](https://github.com/hakimel/reveal.js#markdown).
-	    </section>
-	    ```
-	  </script>
-	</section>
+        <section data-background-video="lib/paredit.mp4">
+          <!-- paredit demo -->
+        </section>
 
-	<section>
-	  <section id="fragments">
-	    <h2>Fragments</h2>
-	    <p>Hit the next arrow...</p>
-	    <p class="fragment">... to step through ...</p>
-	    <p><span class="fragment">... a</span> <span class="fragment">fragmented</span> <span class="fragment">slide.</span></p>
-
-	    <aside class="notes">
-	      This slide has fragments which are also stepped through in the notes window.
-	    </aside>
-	  </section>
-	  <section>
-	    <h2>Fragment Styles</h2>
-	    <p>There's different types of fragments, like:</p>
-	    <p class="fragment grow">grow</p>
-	    <p class="fragment shrink">shrink</p>
-	    <p class="fragment fade-out">fade-out</p>
-	    <p class="fragment current-visible">current-visible</p>
-	    <p class="fragment highlight-red">highlight-red</p>
-	    <p class="fragment highlight-blue">highlight-blue</p>
-	  </section>
-	</section>
-
-	<section id="transitions">
-	  <h2>Transition Styles</h2>
-	  <p>
-	    You can select from different transitions, like: <br>
-	    <a href="?transition=none#/transitions">None</a> -
-	    <a href="?transition=fade#/transitions">Fade</a> -
-	    <a href="?transition=slide#/transitions">Slide</a> -
-	    <a href="?transition=convex#/transitions">Convex</a> -
-	    <a href="?transition=concave#/transitions">Concave</a> -
-	    <a href="?transition=zoom#/transitions">Zoom</a>
-	  </p>
-	</section>
-
-	<section id="themes">
-	  <h2>Themes</h2>
-	  <p>
-	    reveal.js comes with a few themes built in: <br>
-	    <!-- Hacks to swap themes after the page has loaded. Not flexible and only intended for the reveal.js demo deck. -->
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/black.css'); return false;">Black (default)</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/white.css'); return false;">White</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/league.css'); return false;">League</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/sky.css'); return false;">Sky</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/beige.css'); return false;">Beige</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/simple.css'); return false;">Simple</a> <br>
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/serif.css'); return false;">Serif</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/blood.css'); return false;">Blood</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/night.css'); return false;">Night</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/moon.css'); return false;">Moon</a> -
-	    <a href="#" onclick="document.getElementById('theme').setAttribute('href','css/theme/solarized.css'); return false;">Solarized</a>
-	  </p>
-	</section>
-
-	<section>
-	  <section data-background="#dddddd">
-	    <h2>Slide Backgrounds</h2>
-	    <p>
-	      Set <code>data-background="#dddddd"</code> on a slide to change the background color. All CSS color formats are supported.
-	    </p>
-	    <a href="#" class="navigate-down">
-	      <img width="178" height="238" data-src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Down arrow">
-	    </a>
-	  </section>
-	  <section data-background="https://s3.amazonaws.com/hakim-static/reveal-js/image-placeholder.png">
-	    <h2>Image Backgrounds</h2>
-	    <pre><code>&lt;section data-background="image.png"&gt;</code></pre>
-	  </section>
-	  <section data-background="https://s3.amazonaws.com/hakim-static/reveal-js/image-placeholder.png" data-background-repeat="repeat" data-background-size="100px">
-	    <h2>Tiled Backgrounds</h2>
-	    <pre><code style="word-wrap: break-word;">&lt;section data-background="image.png" data-background-repeat="repeat" data-background-size="100px"&gt;</code></pre>
-	  </section>
-	  <section data-background-video="https://s3.amazonaws.com/static.slid.es/site/homepage/v1/homepage-video-editor.mp4,https://s3.amazonaws.com/static.slid.es/site/homepage/v1/homepage-video-editor.webm" data-background-color="#000000">
-	    <div style="background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px;">
-	      <h2>Video Backgrounds</h2>
-	      <pre><code style="word-wrap: break-word;">&lt;section data-background-video="video.mp4,video.webm"&gt;</code></pre>
-	    </div>
-	  </section>
-	  <section data-background="http://i.giphy.com/90F8aUepslB84.gif">
-	    <h2>... and GIFs!</h2>
-	  </section>
-	</section>
-
-	<section data-transition="slide" data-background="#4d7e65" data-background-transition="zoom">
-	  <h2>Background Transitions</h2>
-	  <p>
-	    Different background transitions are available via the backgroundTransition option. This one's called "zoom".
-	  </p>
-	  <pre><code>Reveal.configure({ backgroundTransition: 'zoom' })</code></pre>
-	</section>
-
-	<section data-transition="slide" data-background="#b5533c" data-background-transition="zoom">
-	  <h2>Background Transitions</h2>
-	  <p>
-	    You can override background transitions per-slide.
-	  </p>
-	  <pre><code style="word-wrap: break-word;">&lt;section data-background-transition="zoom"&gt;</code></pre>
-	</section>
-
-	<section>
-	  <h2>Pretty Code</h2>
-	  <pre><code data-trim contenteditable>
-              function linkify( selector ) {
-              if( supports3DTransforms ) {
-
-              var nodes = document.querySelectorAll( selector );
-
-              for( var i = 0, len = nodes.length; i &lt; len; i++ ) {
-              var node = nodes[i];
-
-              if( !node.className ) {
-              node.className += ' roll';
-              }
-              }
-              }
-              }
-	  </code></pre>
-	  <p>Code syntax highlighting courtesy of <a href="http://softwaremaniacs.org/soft/highlight/en/description/">highlight.js</a>.</p>
-	</section>
-
-	<section>
-	  <h2>Marvelous List</h2>
-	  <ul>
-	    <li>No order here</li>
-	    <li>Or here</li>
-	    <li>Or here</li>
-	    <li>Or here</li>
-	  </ul>
-	</section>
-
-	<section>
-	  <h2>Fantastic Ordered List</h2>
-	  <ol>
-	    <li>One is smaller than...</li>
-	    <li>Two is smaller than...</li>
-	    <li>Three!</li>
-	  </ol>
-	</section>
-
-	<section>
-	  <h2>Tabular Tables</h2>
-	  <table>
-	    <thead>
-	      <tr>
-		<th>Item</th>
-		<th>Value</th>
-		<th>Quantity</th>
-	      </tr>
-	    </thead>
-	    <tbody>
-	      <tr>
-		<td>Apples</td>
-		<td>$1</td>
-		<td>7</td>
-	      <tr>
-	      <tr>
-		<td>Lemonade</td>
-		<td>$2</td>
-		<td>18</td>
-	      <tr>
-	      <tr>
-		<td>Bread</td>
-		<td>$3</td>
-		<td>2</td>
-	      <tr>
-	    </tbody>
-	  </table>
-	</section>
-
-	<section>
-	  <h2>Clever Quotes</h2>
-	  <p>
-	    These guys come in two forms, inline: <q cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
-	      &ldquo;The nice thing about standards is that there are so many to choose from&rdquo;</q> and block:
-	  </p>
-	  <blockquote cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
-	    &ldquo;For years there has been a theory that millions of monkeys typing at random on millions of typewriters would
-	    reproduce the entire works of Shakespeare. The Internet has proven this theory to be untrue.&rdquo;
-	  </blockquote>
-	</section>
-
-	<section>
-	  <h2>Intergalactic Interconnections</h2>
-	  <p>
-	    You can link between slides internally,
-	    <a href="#/2/3">like this</a>.
-	  </p>
-	</section>
-
-	<section>
-	  <h2>Speaker View</h2>
-	  <p>There's a <a href="https://github.com/hakimel/reveal.js#speaker-notes">speaker view</a>. It includes a timer, preview of the upcoming slide as well as your speaker notes.</p>
-	  <p>Press the <em>S</em> key to try it out.</p>
-
-	  <aside class="notes">
-	    Oh hey, these are some notes. They'll be hidden in your presentation, but you can see them if you open the speaker notes window (hit 's' on your keyboard).
-	  </aside>
-	</section>
-
-	<section>
-	  <h2>Export to PDF</h2>
-	  <p>Presentations can be <a href="https://github.com/hakimel/reveal.js#pdf-export">exported to PDF</a>, here's an example:</p>
-	  <iframe src="//www.slideshare.net/slideshow/embed_code/42840540" width="445" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:3px solid #666; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe>
-	</section>
-
-	<section>
-	  <h2>Global State</h2>
-	  <p>
-	    Set <code>data-state="something"</code> on a slide and <code>"something"</code>
-	    will be added as a class to the document element when the slide is open. This lets you
-	    apply broader style changes, like switching the page background.
-	  </p>
-	</section>
-
-	<section data-state="customevent">
-	  <h2>State Events</h2>
-	  <p>
-	    Additionally custom events can be triggered on a per slide basis by binding to the <code>data-state</code> name.
-	  </p>
-	  <pre><code class="javascript" data-trim contenteditable style="font-size: 18px;">
-              Reveal.addEventListener( 'customevent', function() {
-	      console.log( '"customevent" has fired' );
-              } );
-	  </code></pre>
-	</section>
-
-	<section>
-	  <h2>Take a Moment</h2>
-	  <p>
-	    Press B or . on your keyboard to pause the presentation. This is helpful when you're on stage and want to take distracting slides off the screen.
-	  </p>
-	</section>
-
-	<section>
-	  <h2>Much more</h2>
-	  <ul>
-	    <li>Right-to-left support</li>
-	    <li><a href="https://github.com/hakimel/reveal.js#api">Extensive JavaScript API</a></li>
-	    <li><a href="https://github.com/hakimel/reveal.js#auto-sliding">Auto-progression</a></li>
-	    <li><a href="https://github.com/hakimel/reveal.js#parallax-background">Parallax backgrounds</a></li>
-	    <li><a href="https://github.com/hakimel/reveal.js#keyboard-bindings">Custom keyboard bindings</a></li>
-	  </ul>
-	</section>
-
-	<section style="text-align: left;">
-	  <h1>THE END</h1>
-	  <p>
-	    - <a href="http://slides.com">Try the online editor</a> <br>
-	    - <a href="https://github.com/hakimel/reveal.js">Source code &amp; documentation</a>
-	  </p>
-	</section>
-
+        <section>
+          <h1>Wrap up</h1>
+          <ul>
+            <li>Favor maps/functions over macros</li>
+            <li>Have strict team conventions (docstrings!)</li>
+            <li>Protect against missing/mispelled keys with -!&gt;</li>
+            <li>Use Paredit</li>
+          </ul>
+          <p>&nbsp;</p>
+          <p><small>Marshall Brekka - <em>marshall.brekka@avant.com</em></small></p>
+          <p><small>Benny Tsai - <em>benny.tsai@avant.com</em></small></p>
+        </section>
       </div>
 
     </div>
