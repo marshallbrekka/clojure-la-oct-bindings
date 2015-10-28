@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background:black">
 
   <head>
     <meta charset="utf-8">
@@ -28,8 +28,32 @@
       link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
       document.getElementsByTagName( 'head' )[0].appendChild( link );
     </script>
+    <style>
+      .stretch svg {
+        height: 100%;
+      
+      }
+      .stretch svg  text {
+        fill: #FFFFFF;
+      }
 
+      .stretch svg ellipse,.stretch svg line,.stretch svg rect {
+        stroke:#FFFFFF;
+      }
 
+      .reveal pre code {
+        max-height:none;
+      }
+
+      .reveal pre {
+        font-size: 0.80em;
+      }
+
+      .anchor-top {
+        top:0 !important;
+      }
+
+    </style>
     
 
     <!--[if lt IE 9]>
@@ -44,303 +68,340 @@
       <!-- Any section element inside of this container is displayed as a slide -->
       <div class="slides">
 	<section>
-	  <h1>Clojure at ReadyForZero</h1>
-          <p>Mature and large Clojure codebase (100K+ lines)</p>
-          <p>Wide range of uses (Web, Daemon, Infrastructure, PCI)</p>
+	  <h1>Using ^:dynamic *bindings* for awesome!</h1>
 	</section>
 
         <section>
-          <h1>Topics</h1>
+          <h2>Quick Intro to Bindings</h2>
+          <ul>
+            <li>Used with dynamic variables</li>
+            <li>Thread local</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Simple Bindings Demo</h2>
+
+	  <pre><code data-trim contenteditable class="clojure">
+(ns my-ns)
+
+(def ^:dynamic *foo* "hello")
+
+(defn print-foo []
+  (println *foo*))
+          </code></pre>
+	  <pre><code data-trim contenteditable class="clojure">
+(ns your-ns
+  (:require [my-ns]))
+
+(binding [my-ns/*foo* "world"]
+  (my-ns/print-foo))
+;; world
+(my-ns/print-foo)
+;; hello
+          </code></pre>
+        </section>
+
+        <section>
+	  <h2>How we use bindings at ReadyForZero</h2>
+          <p>Hiding complexity behind simple interfaces</p>
+          <p class="fragment">Tonight's Example: Database Caching Layer</p>
+          <aside class="notes">
+            <ul>
+
+            </ul>
+          </aside>
+	</section>
+        
+        <section>
+	  <h2>Database Caching Layer</h2>
+          <p>Requirements for a safe to use interface</p>
           <ol>
-            <li>Why Clojure?</li>
-            <li>Tips for Clojure in production</li>
+            <li class="fragment">Any function can be cached (within reason)</li>
+            <li class="fragment">Dependencies are not declared by the programmer</li>
+            <li class="fragment">Cached functions can call other cached functions (1)</li>
+            <li class="fragment">DB writes invalidate all dependent cached functions (2) (3)</li>
+
+          </ul>
+          <aside class="notes">
+          </aside>
+        </section>
+
+        <section>
+          <h2>How do we solve those requirements?</h2>
+          <p class="fragment">With a tree!</p>
+        </section>
+  
+        <section>
+          <h2>What does that look like?</h2>
+          <p>Functional and Data Dependencies (as code)</p>
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]))      
+
+(defn read-accounts [user-id]
+  (db/read-model :accounts {:user-id user-id}))
+
+(defn read-payments [user-id]
+  (db/read-model :payments {:user-id user-id}))
+
+(defn read-user [user-id]
+  {:accounts (read-accounts user-id)
+   :payments (read-payments user-id)})
+          </code></pre>
+        </section>
+
+        <section>
+          <h2>What does that look like?</h2>
+          <p>Functional and Data Dependencies (as a tree)</p>
+          <div class="stretch">
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 12.8 50 24.2" enable-background="new 0 12.8 50 24.2" xml:space="preserve">
+<text transform="matrix(1 0 0 1 21.374 16.8136)" font-family="'MyriadPro-Regular'" font-size="1.3086">read-user </text>
+<text transform="matrix(1 0 0 1 21.432 18.3847)" font-family="'MyriadPro-Regular'" font-size="1.3086">&lt;user-id&gt;</text>
+<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="24.1" cy="17.1" rx="4.4" ry="3.7"/>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 12.4171 24.5961)" font-family="'MyriadPro-Regular'" font-size="1.1641">read-accounts </text>
+	<text transform="matrix(1 0 0 1 13.6398 25.9926)" font-family="'MyriadPro-Regular'" font-size="1.1641">&lt;user-id&gt;</text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="15.8" cy="24.6" rx="4.4" ry="3.6"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="21.2" y1="19.9" x2="18.9" y2="22.1"/>
+</g>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 3.5735 32.7169)" font-family="'MyriadPro-Regular'" font-size="1.1641">db/read-model </text>
+	<text transform="matrix(1 0 0 1 2.4675 34.1134)" font-family="'MyriadPro-Regular'" font-size="1.1641">:accounts, &lt;user-id&gt;</text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="7.4" cy="33" rx="6.3" ry="3.4"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="12.9" y1="27.3" x2="10.3" y2="30"/>
+</g>
+<g class="fragment">
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="32.9" cy="24.4" rx="4.4" ry="3.8"/>
+	<text transform="matrix(1 0 0 1 29.0642 24.3632)" font-family="'MyriadPro-Regular'" font-size="1.1641">read-payments </text>
+	<text transform="matrix(1 0 0 1 30.5194 25.7598)" font-family="'MyriadPro-Regular'" font-size="1.1641">&lt;user-id&gt;</text>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="27.6" y1="19.4" x2="29.7" y2="21.7"/>
+</g>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 37.1041 32.8281)" font-family="'MyriadPro-Regular'" font-size="1.1641">db/read-model </text>
+	<text transform="matrix(1 0 0 1 35.765 34.2246)" font-family="'MyriadPro-Regular'" font-size="1.1641">:payments, &lt;user-id&gt;</text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="40.9" cy="33.1" rx="6.3" ry="3.4"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="35.1" y1="27.7" x2="37.4" y2="30.3"/>
+</g>
+</svg>
+</div>
+        </section>
+
+        <section>
+          <h3>4. DB writes invalidate dependent cached functions</h3>
+          <div class="stretch">
+            <div style="width:55%; float:left; text-align:left;">
+              <ol>
+                <li class="fragment">Traverse the dependency tree</li>
+                <li class="fragment">Mark each leaf as invalid</li>
+              </ol>
+            </div>
+          <div style="width:44%; float:left;">
+<div class="stretch">
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.1.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="7 12.8 32 34.4" enable-background="new 0 12.8 50 34.4" xml:space="preserve">
+<g class="fragment">
+<text transform="matrix(1 0 0 1 14.1883 42.061)" enable-background="new    "><tspan x="0" y="0" font-family="'MyriadPro-Regular'" font-size="1.3086">insert </tspan><tspan x="-4.4" y="1.6" font-family="'MyriadPro-Regular'" font-size="1.3086">:accounts, {:user-id 10}</tspan></text>
+<rect x="8.2" y="39.8" fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" width="16.5" height="5.4"/>
+</g>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 12.4197 32.717)" enable-background="new    "><tspan x="0" y="0" font-family="'MyriadPro-Regular'" font-size="1.1641">db/read-model</tspan><tspan x="0.4" y="1.4" font-family="'MyriadPro-Regular'" font-size="1.1641">:accounts, 10 </tspan></text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="16.4" cy="33" rx="6.3" ry="3.4"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="16.4" y1="39.8" x2="16.4" y2="36.4"/>
+</g>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 21.3984 24.596)" enable-background="new    "><tspan x="0" y="0" font-family="'MyriadPro-Regular'" font-size="1.1641">read-accounts</tspan><tspan x="2.7" y="1.4" font-family="'MyriadPro-Regular'" font-size="1.1641">10 </tspan></text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="24.9" cy="24.6" rx="4.4" ry="3.6"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="21.9" y1="27.3" x2="19.4" y2="30"/>
+</g>
+<g class="fragment">
+	<text transform="matrix(1 0 0 1 30.5673 17.084)" enable-background="new    "><tspan x="0" y="0" font-family="'MyriadPro-Regular'" font-size="1.3086">read-user</tspan><tspan x="1.8" y="1.6" font-family="'MyriadPro-Regular'" font-size="1.3086">10 </tspan></text>
+	<ellipse fill="none" stroke="#000000" stroke-width="0.25" stroke-miterlimit="10" cx="33.2" cy="17.1" rx="4.4" ry="3.7"/>
+	<line fill="none" stroke="#000000" stroke-width="0.5" stroke-miterlimit="10" x1="30.3" y1="19.9" x2="28" y2="22.1"/>
+</g>
+</svg>
+</div>
+          </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Constructing a dynamic dependency tree with bindings</h2>
+          <ol>
+            <li class="fragment">If parent context exists, register with parent</li>
+            <li class="fragment">Construct a new context</li>
+            <li class="fragment">Run the function body</li>
+            <li class="fragment">Save our context and return the result</li>
           </ol>
         </section>
 
-        <section>
-	  <h1>Why Clojure?</h1>
-          <ul>
-            <li class="fragment">Functional programming with
-              immutability-by-default <em><small>- eliminates whole classes of bugs</small></em></li>
-            <li class="fragment">Pure functions are easy to reason about, and easy to test</li>
-            <li class="fragment">Concurrency for “free”</li>
-          </ul>
-          <aside class="notes">
-            <ul>
-              <li>immutability - easily parralize pure function</li>
-              <li>bypass issues common to multi-thread</li>
-            </ul>
-          </aside>
-	</section>
-        
-
-        <section>
-          <section>
-	    <h2>Why Clojure at ReadyForZero?</h2>
-            <ul>
-              <li class="fragment">Powerful language lets our small team move fast
-                <em><small>- faster than companies with more resources than us</small></em></li>
-              <li class="fragment">Reap all the benefits of the JVM</li>
-              <li class="fragment">Simple data flows, easy to understand and modify</li>
-            </ul>
-            <aside class="notes">
-              <ul>
-                <li>yodlee, payments, PCI, infrastructue</li>
-                <li>java/jvm libraries, battle tested-memory management,
-                  etc</li>
-              </ul>
-            </aside>
-          </section>
-          <section>
-            <h2>Java Interop Benefits</h2>
-            <ul>
-              <li>Don't have to reinvent the wheel if it exists in Java</li>
-              <li>Very easy to use battle-tested Java libraries</li>
-              <li>... and idiomatic Clojure wrappers are easy to find</li>
-            </ul>
-            <table>
-              <thead>
-                <tr>
-                  <th><strong>Clojure</strong></th>
-                  <th>Java</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>carmine</strong></td>
-                  <td>Redis</td>
-                </tr>
-                <tr>
-                  <td><strong>ring</strong></td>
-                  <td>Jetty</td>
-                </tr>
-                <tr>
-                  <td><strong>clj-time</strong></td>
-                  <td>Joda (time library)</td>
-                </tr>
-                <tr>
-                  <td><strong>quartzite</strong></td>
-                  <td>Quartz Schedule (task scheduling)</td>
-                </tr>
-              </tbody>
-            </table>
-          </section>
-
-	</section>
-
         
         <section>
-	  <h2>Easy, Readable Dataflows</h2>
-          <h5>-&gt; and -&gt;&gt; macros let us express our business logic in a clear and succinct way</h5>
-          <p>What many think that lisp looks like (eww, parentheses!)</p>
-	  <pre><code data-trim contenteditable class="clojure">
-(defn get-total-spent
-  "Returns total spent for the given transactions"
-  [transactions]
-  (reduce + (map :amount (filter is-debit-type transactions))))
-	  </code></pre>
-          <p class="fragment">-&gt;&gt; makes the data flow easier to understand and modify</p>
-	  <pre class="fragment"><code data-trim contenteditable class="clojure">
-(defn get-total-spent
-  "Returns total spent for the given transactions"
-  [transactions]
-  (->> transactions
-       (filter is-debit-type)
-       (map :amount)
-       (reduce +)))
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.cache
+  (:require [app.cache.meta :as meta]))              
+
+;; will be nil or an atom containing a list
+(def ^:dynamic *dependencies* nil)
+
+;; register with parent
+(defn log-dependency
+  "Logs the key as a dependency of the parent 
+   cached context, if there is one."
+  [dependency-key]
+  (when *dependencies*
+    (swap! *dependencies* conj dependency-key)))
+
+;; Save context and return the result
+(defn save-dependencies [dependency-key]
+  (meta/save dependency-key *dependencies))
           </code></pre>
-          <aside class="notes">
-            Threading macros (thread-first, thread-last)
-          </aside>
-	</section>
-
-
-        <section>
-	  <h2>Easy, Readable Dataflows</h2>
-          <p>->> also lets you build functions concatenatively in the REPL</p>
-          <p>immutability + s-expressions = <em>quick development</em></p>
-
-          <pre><code data-trim contenteditable  class="clojure">
-> (->> "test" println)
-test
-> (->> "test" (println "a"))
-a test
-> (->> "test" (str "a ") (println "here is "))
-here is a test
-          </code></pre>
-          <aside class="notes">
-            <p>immutability + s-expressions = quick. python and
-              ruby <em><strong>cannot</strong></em> do as easily</p>
-          </aside>
-	</section>
-
-        <section data-background-video="lib/concat_repl.mp4">
-<!--          <p>Demo of concat programming</p>
-            <iframe data-autoplay
-                  src="https://asciinema.org/api/asciicasts/13761?loop=true&amp;size=medium"
-                  id="asciicast-iframe-13761" name="asciicast-iframe-13761"
-                  scrolling="yes" class="stretch"></iframe>-->
         </section>
-
-        <section data-background-video="lib/qa_repl.mp4">
-          <aside class="notes">
-            <ul>
-              <li>start browser session</li>
-              <li>query for qa elements</li>
-              <li>perform actions on those qa elements</li>
-              <li>Write full test based on REPL</li>
-            </ul>
-          </aside>
-        </section>
-
-        <section>
-          <h2>Macros - the good</h2>
-          <p>Powerful for creating abstractions, DSLs, new syntax</p>
-          <pre class="fragment"><code data-trip contenteditable  class="clojure">
-(defvalidatedfn login
-  "Given a map with keys :email and :password attempts to login the
-   user and returns an :ok or :error response"
-  [params]
-  [{:email String :password String} => {:response (s/enum :ok :error)}]
-  (if (do-login (:email params) (:password params))
-    {:response :ok}
-    {:response :error}))
-          </code></pre>
-          <aside class="notes">
-            <ul>
-              <li>Language level construct.</li>
-              <li>extends the standard defn form to allow for validation</li>
-            </ul>
-          </aside>
-        </section>
-
-        <section>
-          <h2>Why Clojure Recap</h2>
-          <ul>
-            <li>Build up logic iteratively with simple primitives</li>
-            <li>Get instant feedback</li>
-            <li>Very expressive, at the same level as the langauge</li>
-          </ul>
-        </section>
-
-        <section>
-          <h1>Tips for using Clojure in production</h1>
-        </section>
-
-        <section>
-          <h2>Macros - the bad</h2>
-          <ul>
-            <li class="fragment">Limited composability, can’t be used in higher-order functions</li>
-            <li class="fragment">Better to use less macros and DLSs in favor of functions and maps</li>
-          </ul>
-          <pre class="fragment"><code data-trip contenteditable  class="clojure">
-(defendpoint web2 [:post "/authed/graph"]
-  (in {:type string?
-       :account string?})
-  (out (with-valid-control
-         {}))
-  (return {:keys [type account]}
-          (if-let [graph-data (prog/get-graph (user/me) type account)]
-            (with-control {:result "ok"} graph-data)
-            (with-control {:result "not-found"} nil))))
-          </code></pre>
-          <aside class="notes">
-            <ul>
-              <li>do not compose as well as functions (not higher order)</li>
-              <li>difficult to reason about</li>
-              <li>DSLs and macros violated principle-of-least-surprise, we avoid
-              them, exceptions are reviewed</li>
+        <section  data-transition="fade" class="anchor-top">
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
               
-              <li>return block, wtf are the args to this, this
-                looks nothing like a function (but it is!!!)</li>
-              </ul>
-          </aside>
+(defn read-accounts [user-id]
+  (db/read-model :accounts {:user-id user-id}))
+          </code></pre>
+        </section>
+        <section data-transition="fade"  class="anchor-top">
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
+              
+(defn read-accounts [user-id]
+  ;; register with parent
+  (cache/log-dependency :read-accounts)
+  (db/read-model :accounts {:user-id user-id}))
+          </code></pre>
         </section>
 
-        <section>
-          <h2>Macros - the bad</h2>
-          <p>Instead use standard functions and maps</p>
-          <pre><code data-strip contenteditable  class="clojure">
-(add-handler :mobile "progressgraph" "1" "progressgraph"
-  {:fn progress-graph
-   :in-examples [{:account-id 1}]
-   :out-examples [(iface/response :ok {:current  [{:x 11.2 :y 20}
-                                                  {:x 13 :y 10}
-                                                  {:x 14 :y 0}]
-                                       :history  [{:x 1 :y 50}
-                                                  {:x 4 :y 40.34}
-                                                  {:x 10 :y 35.0}]})
-                  (iface/response :error ["something wrong"])]})
+        <section data-transition="fade"  class="anchor-top">
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
+              
+(defn read-accounts [user-id]
+  ;; register with parent
+  (cache/log-dependency :read-accounts)
+  ;; Construct a new context
+  (binding [cache/*dependencies* (atom '())]
+    (db/read-model :accounts {:user-id user-id})))
+          </code></pre>
+        </section>
+
+        <section data-transition="fade"  class="anchor-top">
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
+              
+(defn read-accounts [user-id]
+  ;; register with parent
+  (cache/log-dependency :read-accounts)
+  ;; Construct a new context
+  (binding [cache/*dependencies* (atom '())]
+    (let [accounts ;; Run the function body
+                   (db/read-model
+                     :accounts 
+                     {:user-id user-id})]
+      accounts)))
+          </code></pre>
+        </section>
+
+        <section data-transition="fade">
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
+              
+(defn read-accounts [user-id]
+  ;; register with parent
+  (cache/log-dependency :read-accounts)
+  ;; Construct a new context
+  (binding [cache/*dependencies* (atom '())]
+    (let [accounts ;; Run the function body
+                   (db/read-model
+                     :accounts 
+                     {:user-id user-id})]
+      ;; Save context and
+      ;; return the result
+      (cache/save-dependencies :read-accounts)
+      accounts)))
           </code></pre>
         </section>
 
         <section>
-          <h2>Use protection (against clojures power)</h2>
-          <p>Conventions help</p>
-          <p class="fragment">Guardrails, when convention isn’t enough</p>
-          <aside class="notes">
-            Clojure will happily let you “shadow” core
-            functions with local variables. we disallow this in our coding
-          guidelines
-          </aside>
-        </section>
-
-        <section>
-          <h2>Most common bug</h2>
-          <p>Missing/misspelled keys</p>
-          <pre><code data-strip class="clojure">
-(def data {:my-key "my value"})
-(:my-jey data) ;; nil, doesn't throw error              
-          </code></pre>
+          <h2>One Problem...</h2>
           <div class="fragment">
-          <p>We guard against them using -!&gt; and friends</p>
-          <pre><code data-strip class="clojure">
-(def data {:my-key "my value"})
-(-!> data :my-jey) ;; got nil value for key, Throws Exception!
+            <p>This is fugly :(</p>
+          <pre><code data-trim contenteditable class="clojure">
+(ns app.user
+  (:require [app.db :as db]
+            [app.cache :as cache]))
+              
+(defn read-accounts [user-id]
+  (cache/log-dependency :read-accounts)
+  (binding [cache/*dependencies* (atom '())]
+    (let [accounts (db/read-model
+                     :accounts 
+                     {:user-id user-id})]
+      (cache/save-dependencies :read-accounts)
+      accounts)))
           </code></pre>
           </div>
         </section>
 
         <section>
-          <h2>What does function in/out look like?</h2>
-          <p>For trusted entry points, docstrings usually suffice</p>
-          <pre><code class="clojure" data-strip>
-(defn user-accounts 
-  "Given a user id, returns a list of account objects, each 
-   with the keys :id, :balance, :name, :created-date"
-   [user-id]
-   ...)
+          <h2>Wrap it in a macro!</h2>
+          <pre class="fragment"><code data-trim contenteditable class="clojure">
+(defmacro defcachedfn [fn-name fn-args & body]
+   (let [fn-key (gen-cache-key fn-name fn-args)]
+    `(fn [args#]
+       (if-let [cached# (get-cached ~fn-key)]
+         cached#
+         ;; register with parent
+         (log-dependency ~fn-key)
+         ;; Construct a new context
+         (binding [*dependencies* (atom '())]
+           ;; Run the function body
+           (let [result# (do ~@body)]
+             ;; Save context and
+             ;; return the result
+             (save-dependencies ~fn-key)
+             result#))))))
           </code></pre>
-          <p class="fragment">For unstrusted entry points - Prismatic Schema to
-            the rescue!</p>
-          <aside class="notes">
-            We added the primastic schema library as a language level feature
-            for our defvalidatedfn implimentation
-          </aside>
         </section>
 
         <section>
-          <h2>Use Paredit!</h2>
-          <h3>Plugin available for many editors</h3>
-          <p>Auto-manage parenthesis balance</p>
-          <p>Easy manipulation of s-expression form</p>
-        </section>
-
-        <section data-background-video="lib/paredit.mp4">
-          <!-- paredit demo -->
+          <h2>Programmer Peace of Mind</h2>
+          <p>Without caching</p>
+          <pre><code data-trim contenteditable class="clojure">
+(defn read-accounts [user-id]
+  (db/read-model :accounts user-id))               
+          </code></pre>
+          <div class="fragment">
+            <p>With caching</p>
+            <pre><code data-trim contenteditable class="clojure">
+(defcachedfn read-accounts [user-id]
+  (db/read-model :accounts user-id))               
+            </code></pre>
+          </div>
         </section>
 
         <section>
-          <h1>Wrap up</h1>
-          <ul>
-            <li>Favor maps/functions over macros</li>
-            <li>Have strict team conventions (docstrings!)</li>
-            <li>Protect against missing/mispelled keys with -!&gt;</li>
-            <li>Use Paredit</li>
-          </ul>
+          <h1>Thanks For Listening</h1>
           <p>&nbsp;</p>
-          <p><small>Marshall Brekka - <em>marshall.brekka@avant.com</em></small></p>
-          <p><small>Benny Tsai - <em>benny.tsai@avant.com</em></small></p>
+          <p>Marshall Brekka - <em>marshall.brekka@avant.com</em></p>
         </section>
       </div>
 
